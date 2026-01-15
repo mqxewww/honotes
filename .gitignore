@@ -1,0 +1,9 @@
+# deps
+node_modules/
+
+# webstorm
+/.idea/
+
+# environment variables
+.env*
+!.env.template
