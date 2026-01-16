@@ -3,6 +3,7 @@ import { z } from "zod";
 const configSchema = z.object({
   API_PORT: z.string().transform(Number),
   DB_FILE_NAME: z.string(),
+  FRONTEND_URL: z.url(),
 });
 
 const parsedConfig = configSchema.safeParse(process.env);
