@@ -43,6 +43,14 @@ app.get("/:id", zValidator("param", getUserSchema), (c) => {
 app.post("/", zValidator("json", createUserSchema), async (c) => {
   const validated = c.req.valid("json");
 
+  const existingUser = db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.email, validated.email))
+    .get();
+
+  if (existingUser) return c.json({ error: { message: "This email is already taken." } }, 400);
+
   const newUser = {
     ...validated,
     password: Bun.password.hashSync(validated.password),
@@ -58,17 +66,25 @@ app.patch(
   zValidator("param", getUserSchema),
   zValidator("json", patchUserSchema),
   async (c) => {
-    const vParam = c.req.valid("param");
+    const validated = {
+      param: c.req.valid("param"),
+      json: c.req.valid("json"),
+    };
 
-    const user = db.select().from(usersTable).where(eq(usersTable.id, vParam.id)).get();
+    if (!validated.json.firstname && !validated.json.lastname && !validated.json.email)
+      return c.json({ error: { message: "There are no changes to be made." } }, 400);
+
+    const user = db.select().from(usersTable).where(eq(usersTable.id, validated.param.id)).get();
 
     if (!user) return c.json({}, 404);
 
-    const vBody = c.req.valid("json");
-
     await db
       .update(usersTable)
-      .set({ firstname: vBody.firstname, lastname: vBody.lastname, email: vBody.email })
+      .set({
+        firstname: validated.json.firstname,
+        lastname: validated.json.lastname,
+        email: validated.json.email,
+      })
       .where(eq(usersTable.id, user.id));
 
     return c.json({}, 200);
